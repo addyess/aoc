@@ -1,12 +1,11 @@
 import logging
-import time
 logger = logging.getLogger(__name__)
 
 FORMAT = '%(asctime)-15s: %(message)s'
 logging.basicConfig(format=FORMAT, level=logging.INFO)
 logger.info("Start")
 with open('input1.txt') as f:
-	ints = [int(i) for i in f.readlines() if i]
+    ints = [int(i) for i in f.readlines() if i]
 
 logger.info("Solution #1 (%d)", sum(ints))
 

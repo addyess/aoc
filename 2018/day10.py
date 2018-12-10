@@ -8,64 +8,65 @@ logger.info("Start")
 parser = re.compile(r'position=<\s*(-?\d+),\s*(-?\d+)> velocity=<\s*(-?\d+),\s*(-?\d+)>')
 
 
+class Image:
+    def __init__(self, stars, wh, xy, seconds):
+        self.stars, self.seconds = stars, seconds
+        self.width, self.height = wh
+        self.area = self.width * self.height
+        self.minx, self.miny = xy
+
+    def show(self):
+        disp = [None] * (self.height + 1)
+        for h in range(self.height + 1):
+            disp[h] = [' '] * (self.width + 1)
+
+        for star in self.stars:
+            disp[star[1] - self.miny][star[0] - self.minx] = '#'
+        logger.info("Solution #1: \n%s\n", '\n'.join(''.join(row) for row in disp))
+
+
 class StarMap:
     def __init__(self, f):
         self.found = None
-        self.seconds = 0
         self.stars = [
             tuple(imap(int, parser.search(txt).groups()))
             for txt in f
         ]
 
     def smallest(self, img):
-        img_area = (img.height * img.width) if img else 0
-        f_area = (self.found.height * self.found.width) if self.found else ''
         if img:
-            if img_area < f_area:
+            f_area = self.found.area if self.found else ''
+            if img.area < f_area:
                 self.found = img
-            elif img_area > f_area:
+            elif img.area > f_area:
                 return self.found
-        return None
 
-    def draw_tick(self, step):
-        from PIL import Image, ImageDraw
-        minx = min(imap(lambda _: _[0], step))
-        miny = min(imap(lambda _: _[1], step))
-        maxx = max(imap(lambda _: _[0], step))
-        maxy = max(imap(lambda _: _[1], step))
+    def tick(self, stars, seconds):
+        minimum_draw_size = len(stars) / 4
+        minx, miny, maxx, maxy = '', '', 0, 0
+        new_stars = []
+        for x, y, vx, vy in stars:
+            minx = min(x, minx)
+            miny = min(y, miny)
+            maxx = max(x, maxx)
+            maxy = max(y, maxy)
+            new_stars.append((x+vx, y+vy, vx, vy))
         xsize = maxx - minx
         ysize = maxy - miny
-        img, draw = None, None
-        minimum_draw_size = len(step) / 4
-
+        img = None
+        seconds += 1
         if xsize < minimum_draw_size or ysize < minimum_draw_size:
-            img = Image.new("RGB", (xsize + 5, ysize + 5), "white")
-            img.seconds = self.seconds
-            draw = ImageDraw.Draw(img)
-
-        def add_pixel(args):
-            x, y, vx, vy = args
-            if draw:
-                draw.rectangle([
-                    (x - minx, y - miny),
-                    (x - minx + DOT_SIZE - 1, y - miny + DOT_SIZE - 1)
-                ], fill='black')
-            return x+vx, y+vy, vx, vy
-
-        step = map(add_pixel, step)
-        self.seconds += 1
-        return step, img
+            img = Image(stars, (xsize, ysize), (minx, miny), seconds)
+        return new_stars, img, seconds
 
     def locate(self):
-        step = self.stars
-        while True:
-            step, drawn = self.draw_tick(step)
-            smallest = self.smallest(drawn)
-            if smallest:
-                smallest.show()
-                return smallest.seconds
+        seconds, smallest, stars = 0, None, self.stars
+        while not smallest:
+            stars, img, seconds = self.tick(stars, seconds)
+            smallest = self.smallest(img)
 
-DOT_SIZE = 1
+        smallest.show()
+        return smallest.seconds
 
 
 with open('input10.txt') as in_file:

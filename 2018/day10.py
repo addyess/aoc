@@ -64,11 +64,13 @@ class StarMap:
         while not smallest:
             stars, img, seconds = self.tick(stars, seconds)
             smallest = self.smallest(img)
-
-        smallest.show()
-        return smallest.seconds
+        return smallest
 
 
 with open('input10.txt') as in_file:
     m = StarMap(in_file)
-logger.info('Solution #2: %d (sec)', m.locate())
+
+solution = m.locate()
+solution.show()
+logger.info('Solution #2: %d (sec)', solution.seconds)
+

@@ -8,77 +8,69 @@ logging.basicConfig(format='%(asctime)-15s: %(message)s', level=logging.INFO)
 class Score:
     @classmethod
     def make(cls):
-        return cls([3, 7], [0, 1])
+        return cls([3, 7], (0, 1))
 
     def __init__(self, score, elves):
         self.score = blist(score)
+        self.score_len = len(score)
         self.elves = elves
 
-    def next(self):
-        idx1, idx2 = self.elves
-        cur1, cur2 = self.score[idx1], self.score[idx2]
-        s = cur1 + cur2
-        n1, n2 = (s // 10), s % 10
-        score = self.score + blist([n1, n2] if n1 else [n2])
-        score_len = len(score)
-        elves = [(idx1 + cur1 + 1) % score_len, (idx2 + cur2 + 1) % score_len]
-        return Score(score, elves)
-
     def extend(self, rounds):
-        rounds = int(rounds)
-        final = self
-        while len(final.score) < (rounds + 10):
-            final = next(final)
-        return final
+        elves = self.elves
+        while self.score_len < int(rounds):
+            cur = self.score[elves[0]], self.score[elves[1]]
+            s = sum(cur)
+            n1, n2 = (s // 10), s % 10
+            self.score.extend([n1, n2] if n1 else [n2])
+            self.score_len += 2 if n1 else 1
+            elves = (elves[0] + cur[0] + 1) % self.score_len, \
+                    (elves[1] + cur[1] + 1) % self.score_len
+        self.elves = elves
+        return self
 
-    def rep(self, start, size):
-        start, size = int(start), int(size)
-        rep = self.score[start:start+size]
-        return ''.join(map(str, rep))
+    def next_ten(self, start):
+        start = int(start)
+        if self.score_len < (start+10):
+            self.extend(start+10)
+        return ''.join(map(str, self.score[start:start+10]))
 
-    def search(self, m, idx=0):
-        def find_from_here(score_set, idx):
-            score_len = len(score_set.score)
-            while (idx + size) < score_len:
-                rep = score_set.score[idx:idx+size]
-                if m == rep:
-                    return True, idx
-                idx += 1
-            return False, idx
-
-        found = False
-        score_set = self
-        m = map(int, list(str(m)))
+    def _find_here(self, m, idx):
         size = len(m)
-        while not found:
-            found, idx = find_from_here(score_set, idx)
-            if not found:
-                for _ in range(10000):
-                    score_set = next(score_set)
-        return idx
+        while (idx + size) < self.score_len:
+            rep = self.score[idx:idx + size]
+            if m == rep:
+                return True, idx
+            idx += 1
+        return False, idx
+
+    def index_of(self, m, idx=0):
+        m = map(int, list(str(m)))
+        while True:
+            found, idx = self._find_here(m, idx)
+            if found:
+                return idx
+            self.extend(self.score_len + 10000)
 
 
 def main():
     logger.info("Start")
+
+    chocolate = Score.make()
+    assert '5158916779' == chocolate.next_ten(9)
+    assert '0124515891' == chocolate.next_ten(5)
+    assert '9251071085' == chocolate.next_ten(18)
+    assert '5941429882' == chocolate.next_ten(2018)
+
     with open('input14.txt') as in_file:
         m = in_file.read().strip()
-
-    chocolate = Score.make().extend(2040)
-    assert chocolate.rep(9, 10) == '5158916779'
-    assert chocolate.rep(5, 10) == '0124515891'
-    assert chocolate.rep(18, 10) == '9251071085'
-    assert chocolate.rep(2018, 10) == '5941429882'
-
-    chocolate = chocolate.extend(m)
-    sol1 = chocolate.rep(m, 10)
+    sol1 = chocolate.next_ten(m)
     logger.info('Solution #1: %s', sol1)
 
-    assert chocolate.search(51589) == 9
-    assert chocolate.search('01245') == 5
-    assert chocolate.search(92510) == 18
-    assert chocolate.search(59414) == 2018
-    chocolate = chocolate.extend(148000000)
-    sol2 = chocolate.search(m)
+    assert 9 == chocolate.index_of('51589')
+    assert 5 == chocolate.index_of('01245')
+    assert 18 == chocolate.index_of('92510')
+    assert 2018 == chocolate.index_of('59414')
+    sol2 = chocolate.index_of(m)
     logger.info('Solution #2: %s', sol2)
 
 

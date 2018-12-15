@@ -1,5 +1,4 @@
 import logging
-from blist import blist
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(format='%(asctime)-15s: %(message)s', level=logging.INFO)
@@ -11,7 +10,7 @@ class Score:
         return cls([3, 7], (0, 1))
 
     def __init__(self, score, elves):
-        self.score = blist(score)
+        self.score = list(score)
         self.score_len = len(score)
         self.elves = elves
 

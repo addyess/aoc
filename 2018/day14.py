@@ -41,7 +41,7 @@ class Score:
         return False, idx
 
     def index(self, m, idx=0):
-        m = map(int, list(str(m)))
+        m = list(map(int, str(m)))
         while True:
             found, idx = self._find_here(m, idx)
             if found:

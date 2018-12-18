@@ -10,14 +10,8 @@ VERT = re.compile(r'x=(\d+), y=(\d+)..(\d+)')
 
 
 def up(loc): return loc[0] - 1, loc[1]
-
-
 def down(loc): return loc[0] + 1, loc[1]
-
-
 def left(loc): return loc[0], loc[1] - 1
-
-
 def right(loc): return loc[0], loc[1] + 1
 
 
@@ -42,14 +36,14 @@ class Unit:
         return [cls((y, x), '#') for x in range(x1, x2+1)]
 
     @classmethod
-    def veritcal(cls, vert):
+    def vertical(cls, vert):
         x, y1, y2 = map(int, vert.groups())
         return [cls((y, x), '#') for y in range(y1, y2+1)]
 
     @staticmethod
     def vein(txt):
         horiz = HORIZ.match(txt)
-        return Unit.horizontal(horiz) if horiz else Unit.veritcal(VERT.match(txt))
+        return Unit.horizontal(horiz) if horiz else Unit.vertical(VERT.match(txt))
 
 
 class Grid:
@@ -115,7 +109,7 @@ class Grid:
             for x in range(lit.x+1, rit.x+1):
                 self.units[(it.y-1, x)] = Unit((it.y-1, x), '|')
             return self.insert, (rit,)
-        pass
+        raise UserWarning("This should never be reached")
 
     def flow(self):
         trampolines = {(self.insert, (self.at(down((self.miny - 1, 500))),))}
@@ -136,4 +130,4 @@ if __name__ == '__main__':
 
     grid.flow()
     logger.info("Solution #1: %s", grid.wet_area)
-    logger.info("Solution #1: %s", grid.drained_area)
+    logger.info("Solution #2: %s", grid.drained_area)

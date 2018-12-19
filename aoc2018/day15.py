@@ -4,7 +4,7 @@ from itertools import ifilter
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(format='%(asctime)-15s: %(message)s', level=logging.INFO)
-
+ELF_ATTACK = 4
 
 def up(loc): return (loc[0] - 1, loc[1])
 def down(loc): return (loc[0] + 1, loc[1])
@@ -18,7 +18,7 @@ class Unit:
         self.loc = loc
         self.locked = False
         self.hits = 200
-        self.power = 3
+        self.power = ELF_ATTACK if c == 'E' else 3
 
     def __repr__(self):
         return "{}({})".format(self.c, self.hits)
@@ -127,6 +127,13 @@ class Grid:
         competitors = [u for u in self.units.values() if not u.open]
         return len(set(c.c for c in competitors)) == 1
 
+    def body_count(self):
+        competitors = [u for u in self.units.values() if not u.open]
+        return {
+            c:len(filter(lambda u: u.c==c, competitors))
+            for c in set(c.c for c in competitors)
+         }
+
     def score(self):
         competitors = [u for u in self.units.values() if not u.open]
         return sum((c.hits for c in competitors))
@@ -149,8 +156,6 @@ class Grid:
         distances = Distance({start.loc: 0})
         outer(start, 1)
         dist = distances.get(end.loc)
-        if dist > 50:
-            logger.info("Shorted Dist from %s to %s is %s", start.loc, end.loc, dist)
         return (dist, end.loc, end, distances) if dist else None
 
     def next(self):
@@ -191,26 +196,45 @@ class Grid:
 
 def complete_game(text, expected):
     g = Grid.construct(text.split('\n'))
+    body_count = g.body_count()
     n = 0
+    logger.info("--------ELF ATTACK=%d----------", ELF_ATTACK)
     while not g.complete():
-        logger.info("Round %s:%s", n, g)
+        logger.info("Round %s (ELF ATTACK=%s):%s", n, ELF_ATTACK, g)
         g = next(g)
         n += 1
-    logger.info("After {} rounds:".format(n))
-    logger.info(g)
-    score = n * g.score()
+    score = (n-1) * g.score()
     if expected:
         assert score == expected
-    return score
+    elves_lost = body_count.get('E', 0) - g.body_count().get('E', 0)
+    logger.info(g)
+    logger.info("After %s rounds with ELF ATTACK %s:, Lost %s Elf", n, ELF_ATTACK, elves_lost)
+    return score, elves_lost == 0
 
 
 def main():
+    global ELF_ATTACK
     logger.info("Start")
     with open('input15.txt') as in_file:
         m = in_file.read()
-    sol1 = complete_game(m, None)
-    sol2 = None
+
+    ELF_ATTACK = 3
+    sol1, survived = complete_game(m, None)
     logger.info('Solution #1: %s', sol1)
+
+    attack_min, attack_max = 4, 52
+    ELF_ATTACK = attack_max
+    sol2 = 'unknown'
+    while (attack_max - attack_min) > 1:
+        logger.info("Attack between %d-%d", attack_min, attack_max)
+        sol, survived = complete_game(m, None)
+        if survived:
+            sol2 = sol
+            attack_max = min(attack_max, ELF_ATTACK)
+            ELF_ATTACK = ELF_ATTACK - (ELF_ATTACK - attack_min) // 2
+        else:
+            attack_min = max(attack_min, ELF_ATTACK)
+            ELF_ATTACK = ELF_ATTACK + int(math.ceil((float(attack_max) - ELF_ATTACK) / 2))
     logger.info('Solution #2: %s', sol2)
 
 

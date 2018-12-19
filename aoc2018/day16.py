@@ -116,5 +116,5 @@ def main():
         reg = reg.execute(ops[opcode], a, b, c)
     logger.info("Solution #2: %d", reg.regs[0])
 
-
-main()
+if __name__ == '__main__':
+    main()

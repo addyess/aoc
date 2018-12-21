@@ -13,28 +13,35 @@ def execute(instructions, regs):
     if bound:
         bound_reg = map(int, bound.groups())[0]
 
-    instructions = instructions[1:]
+    def compiler(inst_text):
+        opcode, a, b, c = inst_text.split()
+        opcode = regs.as_index(opcode)
+        return list(map(int, (opcode, a, b, c))) + [inst_text]
+
+    inc_pr = compiler('addi %d 1 %d' % (bound_reg, bound_reg))[:-1]
+    instructions = map(compiler, instructions[1:])
     while ip != len(instructions):
         pre_ip, pre_regs = ip, regs
         if 0 <= ip <= len(instructions):
-            inst_text = instructions[ip]
+            opcode, a, b, c, inst_text = instructions[ip]
         else:
             raise StopIteration("ip={} is out of bounds", ip)
 
-        opcode, a, b, c = inst_text.split()
-        regs = regs.execute(opcode, *map(int, (a, b, c)))
-        yield 'ip={}'.format(pre_ip), pre_regs.regs, inst_text, regs.regs
+        regs = regs.execute(opcode, a, b, c)
+        yield pre_ip, pre_regs.regs, inst_text, regs.regs
         if bound_reg is not None:
-            regs = regs.execute('addi', bound_reg, 1, bound_reg)
+            regs = regs.execute(*inc_pr)
             ip = regs.regs[bound_reg]
         else:
             ip += 1
 
 
 def emulate(instructions, next_regs):
+    count = 0
     for ip, regs, inst, next_regs in execute(instructions, next_regs):
-        logger.debug('%s %s %s %s', ip, regs, inst, next_regs)
-    return next_regs
+        logger.info('ip=%s %s %s %s', ip, regs, inst, next_regs)
+        count += 1
+    return next_regs, count
 
 
 def sum_factors_of(x):
@@ -49,7 +56,7 @@ def main():
     logger.info("Start")
     with open('input19.txt') as in_file:
         instructions = [l.strip() for l in in_file if l.strip()]
-    regs = emulate(instructions, Registers(0, *[0]*5))
+    regs, _ = emulate(instructions, Registers(0, *[0]*5))
     logger.info("Solution #1: %d", regs[0])
 
     for ip, regs, inst, next_regs in execute(instructions, Registers(1, *[0]*5)):

@@ -1,4 +1,5 @@
 from collections import namedtuple
+import six
 import logging
 
 logger = logging.getLogger(__name__)
@@ -19,39 +20,45 @@ class Registers:
     def __eq__(self, other):
         return self.regs == other.regs
 
+    def as_index(self, opcode):
+        if isinstance(opcode, six.string_types):
+            return self.methods.index(opcode)
+        return opcode
+
     def execute(self, opcode, a, b, c):
         regs = list(self.regs)
-        if opcode == 'addr':
+        opcode = self.as_index(opcode)
+        if opcode == 0:
             regs[c] = self.regs[a] + self.regs[b]
-        elif opcode == 'addi':
+        elif opcode == 1:
             regs[c] = self.regs[a] + b
-        elif opcode == 'mulr':
+        elif opcode == 2:
             regs[c] = self.regs[a] * self.regs[b]
-        elif opcode == 'muli':
+        elif opcode == 3:
             regs[c] = self.regs[a] * b
-        elif opcode == 'banr':
+        elif opcode == 4:
             regs[c] = self.regs[a] & self.regs[b]
-        elif opcode == 'bani':
+        elif opcode == 5:
             regs[c] = self.regs[a] & b
-        elif opcode == 'borr':
+        elif opcode == 6:
             regs[c] = self.regs[a] | self.regs[b]
-        elif opcode == 'bori':
+        elif opcode == 7:
             regs[c] = self.regs[a] | b
-        elif opcode == 'setr':
+        elif opcode == 8:
             regs[c] = self.regs[a]
-        elif opcode == 'seti':
+        elif opcode == 9:
             regs[c] = a
-        elif opcode == 'gtir':
+        elif opcode == 10:
             regs[c] = 1 if a > self.regs[b] else 0
-        elif opcode == 'gtri':
+        elif opcode == 11:
             regs[c] = 1 if self.regs[a] > b else 0
-        elif opcode == 'gtrr':
+        elif opcode == 12:
             regs[c] = 1 if self.regs[a] > self.regs[b] else 0
-        elif opcode == 'eqir':
+        elif opcode == 13:
             regs[c] = 1 if a == self.regs[b] else 0
-        elif opcode == 'eqri':
+        elif opcode == 14:
             regs[c] = 1 if self.regs[a] == b else 0
-        elif opcode == 'eqrr':
+        elif opcode == 15:
             regs[c] = 1 if self.regs[a] == self.regs[b] else 0
         return Registers(*regs)
 

@@ -1,7 +1,6 @@
 import logging
 from collections import namedtuple
-from astar import AStar
-from math import hypot
+import heapq
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(format='%(asctime)-15s: %(message)s', level=logging.INFO)
@@ -9,6 +8,8 @@ Loc = namedtuple('Loc', 'x, y, z')
 
 
 class Region(Loc):
+    ROCKY, WET, NARROW = 0, 1, 2
+
     def __new__(cls, x, y, z, cave, **kwargs):
         self = super(Region, cls).__new__(cls, x, y, z)
         return self
@@ -16,9 +17,9 @@ class Region(Loc):
     def __init__(self, x, y, z, cave, **kwargs):
         super(Region, self).__init__(x, y, z)
         self.cave = cave
-        self._type = kwargs.get('type')
         self._geo_index = kwargs.get('geo_index')
         self._erosion_level = kwargs.get('erosion')
+        self._type = kwargs.get('type')
 
     def at_z(self, z):
         return Region(
@@ -45,23 +46,13 @@ class Region(Loc):
     @property
     def erosion_level(self):
         if self._erosion_level is None:
-            rem = (self.geo_index + self.cave.depth) % 20183
-            self._type = rem % 3
-            self._erosion_level = rem
+            self._erosion_level = (self.geo_index + self.cave.depth) % 20183
         return self._erosion_level
-
-    @property
-    def named(self):
-        return {0: 'rocky', 1: 'wet', 2: 'narrow'}[self.type]
-
-    @property
-    def symbol(self):
-        return {0: '.', 1: '=', 2: '|'}[self.type]
 
     @property
     def type(self):
         if self._type is None:
-            _ = self.erosion_level
+            self._type = self.erosion_level % 3
         return self._type
 
     @property
@@ -69,7 +60,7 @@ class Region(Loc):
         return tuple(self)
 
 
-class Cave(AStar):
+class Cave:
     TORCH, CLIMB, NEITHER = 0, 1, 2
 
     def __init__(self, target, depth):
@@ -81,6 +72,14 @@ class Cave(AStar):
         def sheer(_loc):
             return _loc[0] >= 0 and _loc[1] >= 0
 
+        def distance_between(n1, n2):
+            if any(either in ((Cave.TORCH, Region.WET),
+                              (Cave.CLIMB, Region.NARROW),
+                              (Cave.NEITHER, Region.ROCKY))
+                   for either in [(n1.z, n2.type), (n2.z, n1.type)]):
+                return None
+            return (1 if n1.z == n2.z else 7), n2
+
         points = filter(sheer, [
             (l.x + 1, l.y, l.z),
             (l.x - 1, l.y, l.z),
@@ -90,40 +89,12 @@ class Cave(AStar):
             (l.x, l.y, (l.z + 2) % 3)
         ])
         neighbors = (self.at(*p) for p in points)
-        return neighbors
-
-    def distance_between(self, n1, n2):
-        """
-        TORCH = 0   (rocky 0  or narrow 2)
-        CLIMB = 1   (rocky 0 or wet 1 )
-        NEITHER = 2 (wet 1 or narrow 2)
-
-        In rocky regions, you can use the climbing gear or the torch. You cannot use neither (you'll likely slip and fall).
-        In wet regions, you can use the climbing gear or neither tool. You cannot use the torch (if it gets wet, you won't have a light source).
-        In narrow regions, you can use the torch or neither tool. You cannot use the climbing gear (it's too bulky to fit).
-        """
-        if (
-            (n1.z == Cave.TORCH   and n2.type == 1) or  # TORCH cannot go wet
-            (n1.z == Cave.CLIMB   and n2.type == 2) or  # CLIMB cannot go narrow
-            (n1.z == Cave.NEITHER and n2.type == 0)   # NEITHER cannot go rocky
-        ):
-            return float('inf')
-        if n1.z != n2.z:
-            return 7
-        return 1
-
-    def heuristic_cost_estimate(self, current, goal):
-        x1, y1 = current.x, current.y
-        x2, y2 = goal.x, goal.y
-        hy = hypot(x2 - x1, y2 - y1)
-        if current.z != goal.z:
-            hy = hypot(hy, 1)
-        return hy
+        return filter(None, (distance_between(l, r) for r in neighbors))
 
     def at(self, x, y, z):
-        z = Cave.TORCH if z is None else z
+        z = z or Cave.TORCH
         r = self.regions.get((x, y, z))
-        if z is not 0:
+        if not z:
             copy_me = self.regions.get((x, y, 0))
             if copy_me:
                 r = copy_me.at_z(z)
@@ -133,50 +104,25 @@ class Cave(AStar):
             self.regions[r.loc] = r
         return r
 
-    def __repr__(self):
-        r = ''
-        for y in range(0, self.target.y + 1):
-            r += ''.join(self.at(x, y, 0).symbol for x in range(0, self.target.x + 1)) + '\n'
-        return 'M' + r[1:-2] + 'T'
 
+def dijkstra(cave, source, goal):
+    visited = {}
+    q = []
+    heapq.heappush(q, (0, source))
 
-def time_trip(moves):
-    time = 0
-    pre, tail = moves[0], moves[1:]
-    for n1 in tail:
-        time += 1 if pre.z == n1.z else 7
-        pre = n1
-    return time
-
-
-def test():
-    target = Loc(10, 10, 0)
-    c = Cave(target, 510)
-    assert c.at(0, 0, 0).geo_index == 0
-    assert c.at(0, 0, 0).erosion_level == 510
-    assert c.at(0, 0, 0).named == 'rocky'
-
-    assert c.at(1, 0, 0).geo_index == 16807
-    assert c.at(1, 0, 0).erosion_level == 17317
-    assert c.at(1, 0, 0).named == 'wet'
-
-    assert c.at(0, 1, 0).geo_index == 48271
-    assert c.at(0, 1, 0).erosion_level == 8415
-    assert c.at(0, 1, 0).named == 'rocky'
-
-    assert c.at(1, 1, 0).geo_index == 145722555
-    assert c.at(1, 1, 0).erosion_level == 1805
-    assert c.at(1, 1, 0).named == 'narrow'
-
-    assert c.at(10, 10, 0).geo_index == 0
-    assert c.at(10, 10, 0).erosion_level == 510
-    assert c.at(10, 10, 0).named == 'rocky'
-
-    path = [(x, y) for x in range(0, target.x + 1) for y in range(0, target.y + 1)]
-    assert 114 == sum(c.at(x, y, 0).type for x, y in path)
-
-    r = (list(c.astar(c.at(0, 0, Cave.TORCH), c.target)))
-    assert 45 == time_trip(r)
+    while q:
+        cost, cur = heapq.heappop(q)
+        if cur.loc in visited:
+            continue
+        visited[cur.loc] = cost
+        if cur.loc == goal.loc:
+            break
+        for edge_cost, nxt in cave.neighbors(cur):
+            ncost = cost + edge_cost
+            if nxt.loc not in visited:
+                heapq.heappush(q, (ncost, nxt))
+    assert q, 'queue exited normally D:'
+    return visited[goal.loc]
 
 
 def main():
@@ -188,12 +134,14 @@ def main():
     c = Cave(target, depth)
 
     points = [(x, y) for x in range(0, target.x + 1) for y in range(0, target.y + 1)]
-    logger.info("Solution #1: %d", sum(c.at(x, y, 0).type for x, y in points))
+    s = sum(c.at(x, y, 0).type for x, y in points)
+    assert s == 11810
+    logger.info("Solution #1: %d", s)
 
-    t = list(c.astar(c.at(0, 0, Cave.TORCH), c.target))
-    logger.info("Solution #2: %d", time_trip(t))
+    t = dijkstra(c, c.at(0, 0, Cave.TORCH), c.target)
+    assert t == 1015
+    logger.info("Solution #2: %d", t)
 
 
 if __name__ == '__main__':
-    test()
     main()

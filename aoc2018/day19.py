@@ -1,4 +1,5 @@
 from day16 import Registers
+import six.moves
 import re
 import logging
 logging.basicConfig(filename='log19.txt', filemode='w',
@@ -11,7 +12,7 @@ def execute(instructions, regs):
     bound_reg, ip = None, 0
     bound = bind.match(instructions[0])
     if bound:
-        bound_reg = map(int, bound.groups())[0]
+        bound_reg = next(six.moves.map(int, bound.groups()))
 
     def compiler(inst_text):
         opcode, a, b, c = inst_text.split()
@@ -19,7 +20,7 @@ def execute(instructions, regs):
         return list(map(int, (opcode, a, b, c))) + [inst_text]
 
     inc_pr = compiler('addi %d 1 %d' % (bound_reg, bound_reg))[:-1]
-    instructions = map(compiler, instructions[1:])
+    instructions = list(six.moves.map(compiler, instructions[1:]))
     while ip != len(instructions):
         pre_ip, pre_regs = ip, regs
         if 0 <= ip <= len(instructions):

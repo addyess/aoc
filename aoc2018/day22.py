@@ -21,14 +21,6 @@ class Region(Loc):
         self._erosion_level = kwargs.get('erosion')
         self._type = kwargs.get('type')
 
-    def at_z(self, z):
-        return Region(
-            self.x, self.y, z, self.cave,
-            geo_index=self.geo_index,
-            type=self.type,
-            erosion=self.erosion_level
-        )
-
     @property
     def geo_index(self):
         if self._geo_index is None:
@@ -82,15 +74,18 @@ class Cave:
         return filter(None, (distance_between(l, self.at(p)) for p in points))
 
     def at(self, loc):
-        r = self.regions.get(loc)
-        if not loc[2]:
-            copy_me = self.regions.get((loc[0], loc[1], 0))
-            if copy_me:
-                r = copy_me.at_z(loc[2])
-                self.regions[r] = r
+        try:
+            return self.regions[loc]
+        except KeyError:
+            pass
+
+        x, y, z = loc
+        r = self.regions.get((x, y, 0))
         if r is None:
-            r = Region(loc[0], loc[1], loc[2], self)
-            self.regions[r] = r
+            r = Region(x, y, z, self)
+        else:
+            r = Region(x, y, z, self, geo_index=r.geo_index, type=r.type, erosion=r.erosion_level)
+        self.regions[loc] = r
         return r
 
     def dijkstra(self, source, goal):

@@ -32,15 +32,13 @@ class Region(Loc):
     @property
     def geo_index(self):
         if self._geo_index is None:
-            if self in ((0, 0, 0), self.cave.target.loc):
+            if self == self.cave.target:
                 self._geo_index = 0
-            elif self.y == 0:
-                self._geo_index = self.x * 16807
-            elif self.x == 0:
-                self._geo_index = self.y * 48271
+            elif self.y == 0 or self.x == 0:
+                self._geo_index = self.x * 16807 + self.y * 48271
             else:
-                self._geo_index = self.cave.at(self.x - 1, self.y, 0).erosion_level * \
-                                  self.cave.at(self.x, self.y - 1, 0).erosion_level
+                self._geo_index = self.cave.at((self.x - 1, self.y, 0)).erosion_level * \
+                                  self.cave.at((self.x, self.y - 1, 0)).erosion_level
         return self._geo_index
 
     @property
@@ -55,10 +53,6 @@ class Region(Loc):
             self._type = self.erosion_level % 3
         return self._type
 
-    @property
-    def loc(self):
-        return tuple(self)
-
 
 class Cave:
     TORCH, CLIMB, NEITHER = 0, 1, 2
@@ -66,7 +60,7 @@ class Cave:
     def __init__(self, target, depth):
         self.depth = depth
         self.regions = {}
-        self.target = self.at(target[0], target[1], Cave.TORCH)
+        self.target = self.at(target)
 
     def neighbors(self, l):
         def sheer(_loc):
@@ -81,48 +75,42 @@ class Cave:
             return (1 if n1.z == n2.z else 7), n2
 
         points = filter(sheer, [
-            (l.x + 1, l.y, l.z),
-            (l.x - 1, l.y, l.z),
-            (l.x, l.y + 1, l.z),
-            (l.x, l.y - 1, l.z),
-            (l.x, l.y, (l.z + 1) % 3),
-            (l.x, l.y, (l.z + 2) % 3)
+            (l.x + 1, l.y, l.z), (l.x - 1, l.y, l.z),
+            (l.x, l.y + 1, l.z), (l.x, l.y - 1, l.z),
+            (l.x, l.y, (l.z + 1) % 3), (l.x, l.y, (l.z - 1) % 3)
         ])
-        neighbors = (self.at(*p) for p in points)
-        return filter(None, (distance_between(l, r) for r in neighbors))
+        return filter(None, (distance_between(l, self.at(p)) for p in points))
 
-    def at(self, x, y, z):
-        z = z or Cave.TORCH
-        r = self.regions.get((x, y, z))
-        if not z:
-            copy_me = self.regions.get((x, y, 0))
+    def at(self, loc):
+        r = self.regions.get(loc)
+        if not loc[2]:
+            copy_me = self.regions.get((loc[0], loc[1], 0))
             if copy_me:
-                r = copy_me.at_z(z)
-                self.regions[r.loc] = r
+                r = copy_me.at_z(loc[2])
+                self.regions[r] = r
         if r is None:
-            r = Region(x, y, z, self)
-            self.regions[r.loc] = r
+            r = Region(loc[0], loc[1], loc[2], self)
+            self.regions[r] = r
         return r
 
+    def dijkstra(self, source, goal):
+        visited = {}
+        q = []
+        heapq.heappush(q, (0, source))
 
-def dijkstra(cave, source, goal):
-    visited = {}
-    q = []
-    heapq.heappush(q, (0, source))
-
-    while q:
-        cost, cur = heapq.heappop(q)
-        if cur.loc in visited:
-            continue
-        visited[cur.loc] = cost
-        if cur.loc == goal.loc:
-            break
-        for edge_cost, nxt in cave.neighbors(cur):
-            ncost = cost + edge_cost
-            if nxt.loc not in visited:
-                heapq.heappush(q, (ncost, nxt))
-    assert q, 'queue exited normally D:'
-    return visited[goal.loc]
+        while q:
+            cost, cur = heapq.heappop(q)
+            if cur in visited:
+                continue
+            visited[cur] = cost
+            if cur == goal:
+                break
+            for edge_cost, nxt in self.neighbors(cur):
+                ncost = cost + edge_cost
+                if nxt not in visited:
+                    heapq.heappush(q, (ncost, nxt))
+        assert q, 'queue exited normally D:'
+        return visited[goal]
 
 
 def main():
@@ -133,12 +121,13 @@ def main():
         target = Loc(loc[0], loc[1], Cave.TORCH)
     c = Cave(target, depth)
 
-    points = [(x, y) for x in range(0, target.x + 1) for y in range(0, target.y + 1)]
-    s = sum(c.at(x, y, 0).type for x, y in points)
+    points = [(x, y, 0) for x in range(target.x + 1) for y in range(target.y + 1)]
+    s = sum(c.at(p).type for p in points)
     assert s == 11810
     logger.info("Solution #1: %d", s)
 
-    t = dijkstra(c, c.at(0, 0, Cave.TORCH), c.target)
+    origin = (0, 0, Cave.TORCH)
+    t = c.dijkstra(c.at(origin), c.target)
     assert t == 1015
     logger.info("Solution #2: %d", t)
 

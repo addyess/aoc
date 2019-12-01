@@ -5,10 +5,10 @@ with open("day1.txt") as f_in:
 
 
 def fuel_req(mod, plus_fuel=False):
-    fuel = (mod // 3) - 2
-    if plus_fuel and fuel >= 0:
+    fuel = max((mod // 3) - 2, 0)
+    if plus_fuel and fuel:
         fuel += fuel_req(fuel, plus_fuel)
-    return max(fuel, 0)
+    return fuel
 
 
 res1 = sum(fuel_req(_) for _ in ins)

@@ -35,9 +35,9 @@ def op_output(modes, a):
     def exec(machine):
         va = a if modes[0] else machine.locs[a]
         try:
+            machine.stdout.send(va)
+        except (AttributeError, TypeError):
             machine.stdout.append(va)
-        except AttributeError:
-            print(f"out: {va}")
     return exec
 
 
@@ -111,27 +111,32 @@ def make_op(locs):
 
 
 class Machine:
-    def __init__(self, locs):
+    def __init__(self, locs, stdin, stdout):
         self.pc, self.locs = 0, locs
-        self.stdin, self.stdout = None, []
+        self.stdin, self.stdout = stdin, stdout
 
     @classmethod
-    def decode(cls, intcode):
+    def decode(cls, intcode, stdin=None, stdout=None):
         locs = [int(_) for _ in intcode.split(",")]
-        return cls(locs)
+
+        try:
+            stdin = iter(stdin)
+        except TypeError:
+            stdin = iter([])
+
+        try:
+            stdout = iter(stdout)
+        except TypeError:
+            stdout = []
+
+        return cls(locs, stdin, stdout)
 
     def step(self):
         next_pc, next_op = make_op(self.locs[self.pc:])
         self.pc += next_pc
         return next_op(self)
 
-    def run(self, stdin=None, stdout=None):
-        try:
-            self.stdin = iter(stdin)
-        except TypeError:
-            self.stdin = iter([])
-        if stdout:
-            self.stdout = stdout
+    def run(self):
         while not self.step():
             pass
         return self.stdout

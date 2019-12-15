@@ -11,12 +11,11 @@ class LayeredImage:
         self.x, self.y = x, y
 
     def value_in_layer(self, val, layer_id):
-        return len([
-            True
+        return sum([
+            str(val) == v
             for rows in self.layers[layer_id]
             for row in rows
             for v in row
-            if str(val) == v
         ])
 
     @property

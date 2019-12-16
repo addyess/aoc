@@ -1,5 +1,8 @@
 from collections import defaultdict
-from aoc2019.defaultlist import defaultlist
+try:
+    from aoc2019.defaultlist import defaultlist
+except ImportError:
+    from defaultlist import defaultlist
 from itertools import islice
 
 

@@ -1,7 +1,3 @@
-from collections import defaultdict
-from random import randint
-from itertools import count
-
 try:
     from aoc2019.computer import Machine
 except ImportError:
@@ -9,7 +5,6 @@ except ImportError:
 
 
 class System:
-    A, B, C, CM, END = 'A', 'B', 'C', ',', '\n'
     L, R = 'L', 'R'
     AS_COORD = {"^": (0, -1), "<": (-1, 0), "v": (0, 1), ">": (1, 0)}
     NEXT = {
@@ -29,14 +24,13 @@ class System:
         self.coord = {}
         self.x_spots = []
         self.path = []
-        self.commands = iter([])
         self.score = 0
 
     def __iter__(self):
         return self
 
     def __next__(self):
-        return ord(next(self.commands))
+        pass
 
     def send(self, val):
         if val > 127:
@@ -91,10 +85,8 @@ class System:
 
     def long_path(self):
         pos, val = self.robo
-        dir = self.AS_COORD[val]
-        path = []
-        end = False
-        while not end:
+        path, dir = [], self.AS_COORD[val]
+        while True:
             if '#' != self.at(self.plus(pos, dir)):
                 choices = set([
                     self.plus(pos, _)
@@ -102,8 +94,8 @@ class System:
                     if '#' == self.at(self.plus(pos, _))
                 ]) - {self.minus(pos, dir)}
                 if len(choices) == 0:
-                    end = True
-                    continue
+                    print(path)
+                    return
                 next_dir = self.minus(choices.pop(), pos)
                 next_val = self.NEXT[(dir, next_dir)]
                 path += [next_val, 0]
@@ -111,8 +103,6 @@ class System:
             else:
                 path = path[:-1] + [(path[-1] + 1)]
                 pos = self.plus(pos, dir)
-        self.path = path
-        return
 
 
 def main():

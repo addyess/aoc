@@ -125,19 +125,18 @@ def main():
     alignments = sys.align()
     print(f"Result 1: {sum(x * y for x, y in alignments)}")
 
-    sys.render()
     sys.long_path()
-    sys.commands = iter(
+    commands = (ord(_) for _ in
         'A,A,B,B,C,B,C,B,C,A\n'
         'L,10,L,10,R,6\n'
         'R,12,L,12,L,12\n'
         'L,6,L,10,R,12,R,12\n'
         'n\n'
     )
-    machine = Machine.decode(ins, sys, sys)
+    machine = Machine.decode(ins, commands)
     machine.locs[0] = 2  # Enable input
     machine.run()
-    print(f"Result 2: {sys.score}")
+    print(f"Result 2: {machine.stdout[-1]}")
 
 
 main()

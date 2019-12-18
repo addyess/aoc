@@ -5,26 +5,22 @@ except ImportError:
 
 
 class System:
-    L, R = 'L', 'R'
     AS_COORD = {"^": (0, -1), "<": (-1, 0), "v": (0, 1), ">": (1, 0)}
     NEXT = {
-        (( 0, -1), (-1,  0)): L,  # ^ -- < is left
-        (( 0, -1), ( 1,  0)): R,  # ^ -- > is right
-        ((-1,  0), ( 0, -1)): R,  # < -- ^ is right
-        ((-1,  0), ( 0,  1)): L,  # < -- v is left
-        (( 1,  0), ( 0, -1)): L,  # > -- ^ is left
-        (( 1,  0), ( 0,  1)): R,  # > -- v is right
-        (( 0,  1), (-1,  0)): R,  # v -- < is right
-        (( 0,  1), ( 1,  0)): L,  # v -- > is left
+        (( 0, -1), (-1,  0)): 'L',  # ^ -- < is left
+        (( 0, -1), ( 1,  0)): 'R',  # ^ -- > is right
+        ((-1,  0), ( 0, -1)): 'R',  # < -- ^ is right
+        ((-1,  0), ( 0,  1)): 'L',  # < -- v is left
+        (( 1,  0), ( 0, -1)): 'L',  # > -- ^ is left
+        (( 1,  0), ( 0,  1)): 'R',  # > -- v is right
+        (( 0,  1), (-1,  0)): 'R',  # v -- < is right
+        (( 0,  1), ( 1,  0)): 'L',  # v -- > is left
     }
 
     def __init__(self):
         self.robo = None
         self.pos = 0, 0
         self.coord = {}
-        self.x_spots = []
-        self.path = []
-        self.score = 0
 
     def __iter__(self):
         return self
@@ -33,9 +29,6 @@ class System:
         pass
 
     def send(self, val):
-        if val > 127:
-            self.score = val
-            return
         a_val = chr(val)
         if a_val in ['^', '<', '>', 'v', 'X']:
             self.robo = self.pos, a_val
@@ -62,7 +55,7 @@ class System:
 
     def align(self):
         minx, miny, maxx, maxy = self.size()
-        self.x_spots = [
+        return [
             (x, y)
             for y in range(miny, maxy + 1)
             for x in range(minx, maxx + 1)
@@ -71,7 +64,6 @@ class System:
                 for dir in [(0, 1), (0, -1), (1, 0), (-1, 0)]]
             )
         ]
-        return self.x_spots
 
     def render(self):
         minx, miny, maxx, maxy = self.size()
@@ -94,8 +86,7 @@ class System:
                     if '#' == self.at(self.plus(pos, _))
                 ]) - {self.minus(pos, dir)}
                 if len(choices) == 0:
-                    print(path)
-                    return
+                    return path
                 next_dir = self.minus(choices.pop(), pos)
                 next_val = self.NEXT[(dir, next_dir)]
                 path += [next_val, 0]

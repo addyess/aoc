@@ -1,5 +1,3 @@
-from itertools import chain, cycle, islice
-
 class Stack:
     OP_INC = "deal with increment "
     OP_NEW = "deal into new stack"
@@ -32,12 +30,33 @@ class Stack:
             target[(idx * i) % cards] = card
         return Stack(target)
 
-    def deal_inc2(self, i):
-        return Stack(chain(
-            [self.cards[0]],
-            islice(
-                islice(cycle(self.cards), i+1, None, i+1),
-                0, len(self.cards)-1)))
+
+def lcg(lines, m, n, pos):
+    def combine(f, unit, a, b):
+        r = unit
+        while True:
+            if not b: return r
+            if b & 1: r = f(r, a)
+            b >>= 1
+            a = f(a, a)
+
+    add = lambda a, b: ((m + (a + b) % m) % m)
+    mul = lambda a, b: combine(add, 0, a, b)
+    pow = lambda a, b: combine(mul, 1, a, b)
+    k, b, x = 1, 0, None
+    for s in lines:
+        if "inc" in s:
+            x = int(s.split("increment ")[-1])
+            k = mul(k, x)
+            b = mul(b, x)
+        elif "cut" in s:
+            x = int(s.split("cut ")[-1])
+            b = add(b, -x)
+        elif "new" in s:
+            k = add(0, -k)
+            b = add(-1, -b)
+    x = mul(b, pow(k - 1, m - 2))
+    return add(mul(add(x, pos), pow(pow(k, m - 2), n)), -x)
 
 
 def main():
@@ -48,14 +67,8 @@ def main():
     stack = Stack.operate(lines, Stack(range(0, 10007)))
     print(f"Result 1: {list(stack.cards).index(2019)}")
 
-    stack = Stack(range(0, 83))
-    for _ in range(0, 83):
-        stack = stack.operate(lines, stack)
-
-    stack = Stack(range(0, 119315717514047))
-    for _ in range(0, 101741582076661):
-        stack = Stack.operate(lines, stack)
-    print(f"Result 2: {list(stack.cards)[2020]}")
+    val = lcg(lines, 119315717514047, 101741582076661, 2020)
+    print(f"Result 2: {val}")
 
 
 if __name__ == '__main__':

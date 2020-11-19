@@ -1,4 +1,5 @@
 from collections import deque, namedtuple
+
 try:
     from blist import blist
 except ImportError:
@@ -29,16 +30,33 @@ class Coord(namedtuple('_Coord', 'x y z')):
 
 
 class Tunnels:
-    DIRS = [(0, 1), (0, -1), (1, 0), (-1, 0)]
+    DIRS = [(1, 0), (0, 1), (-1, 0), (0, -1),]
 
     @classmethod
-    def parse(cls, lines):
-        return cls({
+    def parse(cls, lines, vaulted=False):
+        graph = {
             (x, y): c
             for y, line in enumerate(lines)
             for x, c in enumerate(line)
             if c != "#"
-        })
+        }
+        if vaulted:
+            ysize = len(lines) // 2
+            xsize = len(lines[0]) // 2
+            graph[(xsize+1, ysize+1)] = '@'
+            graph[(xsize-1, ysize-1)] = '@'
+            graph[(xsize+1, ysize-1)] = '@'
+            graph[(xsize-1, ysize+1)] = '@'
+            partitions = [
+                {k: v for k, v in graph.items() if k[0] < xsize and k[1] < ysize},
+                {k: v for k, v in graph.items() if k[0] > xsize and k[1] < ysize},
+                {k: v for k, v in graph.items() if k[0] < xsize and k[1] > ysize},
+                {k: v for k, v in graph.items() if k[0] > xsize and k[1] > ysize},
+            ]
+        else:
+            partitions = [graph]
+
+        return [cls(_) for _ in partitions]
 
     @staticmethod
     def pos(a, b):
@@ -57,22 +75,25 @@ class Tunnels:
 
     def __init__(self, coord):
         self.coord = coord
-        self.graph = self.mk_graph()
         self.cur = set(_ for _, v in self.coord.items() if v == '@').pop()
-        self.num_keys = sum(Coord.bit_val(v) for v in self.coord.values() if 'a' <= v <= 'z')
+        self.graph = self.mk_graph()
+        self.keys = set(v for v in self.coord.values() if 'a' <= v <= 'z')
+        self.num_keys = sum(Coord.bit_val(v) for v in self.keys)
+        self.doors = set(v.upper() for v in self.keys)
+        pass
 
     def is_open(self, pos, node):
         val = self.coord[pos]
-        if 'A' <= val <= 'Z':
+        if val in self.doors:
             return val.lower() in node
         return True
 
     def solve(self):
-        graph, start = self.graph, self.cur
+        graph, starts = self.graph, self.cur
         # keep track of explored nodes
         explored = set()
         # keep track of all the paths to be checked
-        queue = deque([Coord(*start, 0)])
+        queue = deque([Coord(*starts, 0)])
 
         # keeps looping until all possible paths have been checked
         while queue:
@@ -86,7 +107,7 @@ class Tunnels:
                 for neighbor in neighbors:
                     neigh_coord = Coord(*neighbor, node.z, dist=node.dist + 1)
                     neigh_val = self.coord[neighbor]
-                    if 'a' <= neigh_val <= 'z':
+                    if neigh_val in self.keys:
                         neigh_coord = neigh_coord.visit(neigh_val)
 
                     queue.append(neigh_coord)
@@ -97,40 +118,32 @@ class Tunnels:
                 # mark node as explored
                 explored.add(node)
 
+    def size(self):
+        xs, ys = zip(*self.coord.keys())
+        return min(xs), min(ys), max(xs), max(ys)
+
+    def render(self):
+        minx, miny, maxx, maxy = self.size()
+        for y in range(miny, maxy + 1):
+            line = [self.coord.get((x, y)) or '#' for x in range(minx, maxx + 1)]
+            print(''.join(line))
+        print()
+
 
 def main():
     with open("day18.txt") as fin:
         ins = fin.read()
 
-#         ins = """
-# ########################
-# #f.D.E.e.C.b.A.@.a.B.c.#
-# ######################.#
-# #d.....................#
-# ########################
-# """
-#         ins = """
-# ########################
-# #@..............ac.GI.b#
-# ###d#e#f################
-# ###A#B#C################
-# ###g#h#i################
-# ########################"""
-#         ins = """
-# #################
-# #i.G..c...e..H.p#
-# ########.########
-# #j.A..b...f..D.o#
-# ########@########
-# #k.E..a...g..B.n#
-# ########.########
-# #l.F..d...h..C.m#
-# #################"""
-
     lines = ins.strip().splitlines()
     tunnels = Tunnels.parse(lines)
-    steps = tunnels.solve()
-    print(f"{steps.dist}")
+    steps = sum(_.solve().dist for _ in tunnels)
+    print(f"Result 1: {steps}")
+
+    lines = ins.strip().splitlines()
+    tunnels = Tunnels.parse(lines, True)
+    steps = sum(_.solve().dist for _ in tunnels)
+    print(f"Result 2: {steps}")
+    # correct answer was 1222 -- i've got a one-off bug somewhere???
 
 
 main()

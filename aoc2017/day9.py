@@ -3,23 +3,28 @@ with open("day9.txt") as fin:
 
 
 def groups(text, score=0):
-    garb = False
-    accum = 0
+    garb = 0
+    garb_counted, accum = 0, 0
     try:
         while True:
             head, tail = next(text), text
             if head == "!":
-                head, tail = next(text), text
+                next(text), text
             elif head == '<' and not garb:
-                garb = True
+                garb += 1
             elif head == '>' and garb:
-                garb = False
+                garb_counted += (garb - 1)
+                garb = 0
             elif head == '{' and not garb:
-                accum += groups(tail, score=score+1)
+                inner = groups(tail, score=score+1)
+                accum += inner[0]
+                garb_counted += inner[1]
             elif head == '}' and not garb:
-                return score + accum
+                return score + accum, garb_counted
+            elif garb:
+                garb += 1
     except StopIteration:
-        return accum + score
+        return accum + score, garb_counted
 
 
 # assert groups(iter('{}')) == 1
@@ -29,5 +34,12 @@ def groups(text, score=0):
 # assert groups(iter('{<a>,<a>,<a>,<a>}')) == 1
 # assert groups(iter('{{<ab>},{<ab>},{<ab>},{<ab>}}')) == 9
 # assert groups(iter('{{<!!>},{<!!>},{<!!>},{<!!>}}')) == 9
-assert groups(iter('{{<a!>},{<a!>},{<a!>},{<ab>}}')) == 3
+# assert groups(iter('{{<a!>},{<a!>},{<a!>},{<ab>}}')) == (3, 0)
+assert groups(iter('<>')) == (0, 0)
+assert groups(iter('<random characters>')) == (0, 17)
+assert groups(iter('<<<<>')) == (0, 3)
+assert groups(iter('<{!>}>')) == (0, 2)
+assert groups(iter('<!!>')) == (0, 0)
+assert groups(iter('<!!!>>')) == (0, 0)
+assert groups(iter('<{o"i!a,<{i<a>')) == (0, 10)
 print(f"Result 1: {groups(iter(ins))}")

@@ -1,4 +1,4 @@
-#! /usr/bin/python3.7
+#! /usr/bin/python3
 import math
 
 with open("day01.txt") as f_in:

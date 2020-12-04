@@ -2,7 +2,7 @@ from itertools import count
 from math import prod
 
 with open("day03.txt") as f_in:
-    ins = [_.strip() for _ in f_in.readlines()]
+    ins = [_.strip() for _ in f_in]
 
 
 def trees_encountered(forest, r, d):

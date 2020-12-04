@@ -2,13 +2,13 @@
 
 
 def parse(entry):
-    policy, req, password = entry.split(" ")
+    policy, req, password = entry.split()
     lo, hi = map(int, policy.split("-"))
     return lo, hi, req.strip(":"), password
 
 
 with open("day02.txt") as f_in:
-    ins = [parse(_) for _ in f_in.readlines()]
+    ins = [parse(_) for _ in f_in]
 
 
 def is_valid_old_shop(entry):

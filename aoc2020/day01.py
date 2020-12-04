@@ -2,7 +2,7 @@
 import math
 
 with open("day01.txt") as f_in:
-    ins = [int(_.strip()) for _ in f_in.readlines()]
+    ins = [int(_.strip()) for _ in f_in]
 
 
 def find_n_addends(n, series, expected=2020):

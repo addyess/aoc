@@ -1,21 +1,19 @@
 import re
-import functools
+import itertools
+from functools import partial
 
 with open("day04.txt") as f_in:
-    ins = [_.strip() for _ in f_in.readlines()]
+    ins = [_.strip() for _ in f_in]
 
 
-class Record:
+class License:
     @classmethod
-    def parsed(cls, data):
-        record = {}
-        for line in data:
-            if not line:
-                yield cls(record)
-                record = {}
-            else:
-                record.update(dict(pair.split(":") for pair in line.split()))
-        yield cls(record)
+    def parsed(cls, stream):
+        record = True
+        while record:
+            record = list(itertools.takewhile(lambda _: _, stream))
+            line = " ".join(record).split()
+            yield cls(dict(_.split(":") for _ in line))
 
     def __init__(self, data):
         self._ = data
@@ -29,16 +27,16 @@ class Record:
 
     def valid_height(self):
         search = re.search(r"^(\d+)(cm|in)$", self._['hgt'])
-        if not search:
-            return False
-        value, units = search.groups()
-        if units == "cm":
-            return 150 <= int(value) <= 193
-        return 59 <= int(value) <= 76
+        if search:
+            value, units = search.groups()
+            if units == "cm":
+                return 150 <= int(value) <= 193
+            return 59 <= int(value) <= 76
+        return False
 
-    valid_hair = functools.partial(re.match, r'^#[0-9a-f]{6}$')
-    valid_pid = functools.partial(re.match,  r"^\d{9}$")
-    valid_eye = functools.partial(re.match,  r"^(amb|blu|brn|gry|grn|hzl|oth)$")
+    valid_hcl = partial(re.compile(r'^#[0-9a-f]{6}$').match)
+    valid_pid = partial(re.compile(r"^\d{9}$").match)
+    valid_eye = partial(re.compile(r"^(amb|blu|brn|gry|grn|hzl|oth)$").match)
 
     def strict_req(self):
         return all([
@@ -46,13 +44,13 @@ class Record:
             2010 <= self.valid_4_digit('iyr') <= 2020,
             2020 <= self.valid_4_digit('eyr') <= 2030,
             self.valid_height(),
-            self.valid_hair(self._['hcl']),
+            self.valid_hcl(self._['hcl']),
             self.valid_eye(self._['ecl']),
             self.valid_pid(self._['pid'])
         ])
 
 
-records = list(Record.parsed(ins))
+records = list(License.parsed(iter(ins)))
 res1 = [_ for _ in records if _.meets_reqs()]
 print(f"Result 1: {len(res1)}")
 res2 = [_ for _ in res1 if _.strict_req()]

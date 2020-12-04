@@ -9,8 +9,8 @@ def trees_encountered(forest, r, d):
     """
     How many trees do you encounter sliding through this forest?
     :param List[str] forest: map of the forest
-    :param r: x-part of the slope
-    :param d: y-part of the slope
+    :param int r: x-part of the slope
+    :param int d: y-part of the slope
     :return: count of trees encountered on this slope
     """
     return sum(

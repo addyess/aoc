@@ -1,22 +1,15 @@
 import re
-import itertools
+from aoc2020.utils import GroupParsed
 from functools import partial
 
 with open("day04.txt") as f_in:
     ins = [_.strip() for _ in f_in]
 
 
-class License:
-    @classmethod
-    def parsed(cls, stream):
-        record = True
-        while record:
-            record = list(itertools.takewhile(lambda _: _, stream))
-            line = " ".join(record).split()
-            yield cls(dict(_.split(":") for _ in line))
-
+class License(GroupParsed):
     def __init__(self, data):
-        self._ = data
+        line = " ".join(data).split()
+        self._ = dict(_.split(":") for _ in line)
 
     def meets_reqs(self):
         return set('byr iyr eyr hgt hcl ecl pid'.split()).issubset(self._.keys())
@@ -50,7 +43,7 @@ class License:
         ])
 
 
-records = list(License.parsed(iter(ins)))
+records = list(License.parsed(ins))
 res1 = [_ for _ in records if _.meets_reqs()]
 print(f"Result 1: {len(res1)}")
 res2 = [_ for _ in res1 if _.strict_req()]

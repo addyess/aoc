@@ -23,17 +23,17 @@ class Rule(UserDict):
         return dict(record(line) for line in stream)
 
     def can_contain(self, bag):
-        if bag in self.data:
+        if bag in self.keys():
             return True
-        for content in self.data.keys():
-            if self.rules.get(content).can_contain(bag):
+        for content in self.keys():
+            if self.rules[content].can_contain(bag):
                 return True
         return False
 
     def count_nested(self, count_self=False):
         return sum(
             mul * self.rules[bag].count_nested(True)
-            for bag, mul in self.data.items()
+            for bag, mul in self.items()
         ) + count_self
 
 

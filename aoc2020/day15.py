@@ -7,11 +7,10 @@ def game(text, index):
     data = [int(_) for _ in text.split(",")]
     # Record the previous indexes -- except for the last element
     indexes = {val: idx for idx, val in enumerate(data[:-1])}
-    last, idx = data[-1], len(data)
-    while idx != index:
+    last = data[-1]
+    for idx in range(len(data), index):
         prev, indexes[last] = indexes.get(last), idx - 1
-        last = 0 if prev is None else (idx - prev - 1)
-        idx += 1
+        last = 0 if (prev is None) else (idx - 1 - prev)
     return last
 
 

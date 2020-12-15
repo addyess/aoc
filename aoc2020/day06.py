@@ -1,4 +1,5 @@
-from aoc2020.utils import GroupParsed
+
+from utils import GroupParsed
 from functools import reduce
 
 with open("day06.txt") as f_in:

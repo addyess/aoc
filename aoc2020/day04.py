@@ -1,5 +1,5 @@
 import re
-from aoc2020.utils import GroupParsed
+from utils import GroupParsed
 from functools import partial
 
 with open("day04.txt") as f_in:

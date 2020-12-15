@@ -1,4 +1,4 @@
-from aoc2020.computer import Machine
+from computer import Machine
 
 with open("day08.txt") as f_in:
     ins = [_.strip() for _ in f_in]

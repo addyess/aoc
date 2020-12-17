@@ -1,4 +1,3 @@
-"""requires python3.8. for f-strings and walrus operator"""
 with open("day15.txt") as f_in:
     ins = f_in.read().strip()
 

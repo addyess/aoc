@@ -1,4 +1,3 @@
-from functools import reduce
 from math import prod
 with open("day18.txt") as f_in:
     ins = [_.strip() for _ in f_in]
@@ -28,15 +27,15 @@ class NewMath:
 
     @property
     def value(self):
-        def merge(acc, term):
+        acc = 0
+        for term in self.terms('value'):
             if term.startswith("+"):
                 acc += int(term[1:])
             elif term.startswith('*'):
                 acc *= int(term[1:])
             elif term:
                 acc = int(term)
-            return acc
-        return reduce(merge, self.terms('value'), 0)
+        return acc
 
     @property
     def advanced(self):

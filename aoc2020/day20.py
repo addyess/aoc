@@ -5,12 +5,40 @@ from collections import defaultdict, namedtuple
 import re
 
 Score = namedtuple('Score', 'tile, side, flipped, score')
+LOG_FILE, IN_FILE = "day20.log", "day20.txt"
+VERBOSE = True
 
-sample = False
-extension = ('' if not sample else '_sample')
-with open(f"day20{extension}.txt") as f:
+with open(IN_FILE) as f:
     text = f.read()
 tiles_data = text.split("\n\n")
+
+
+def colorize(char, on=False):
+    OKBLUE = '\033[94m'
+    MAGEN = '\033[35m'
+    ENDC = '\033[0m'
+    if char == '█':
+        return MAGEN + char + ENDC
+    elif char == "#" and on:
+        return OKBLUE + char + ENDC
+    return char
+
+
+class Coordinates:
+    @staticmethod
+    def coord(idx, dim):
+        return idx % dim, idx // dim
+
+    def print(self, logfile=None, **kwds):
+        if not VERBOSE:
+            return
+        txt = "\n".join(self.lines(**kwds))
+        if logfile:
+            with open(logfile, 'w') as f:
+                f.write('\033c')
+                f.write(txt)
+        else:
+            print(txt)
 
 
 class Monster:
@@ -33,34 +61,26 @@ class Monster:
         self.width, self.height = width, height
 
 
-class Tile:
+class Tile(Coordinates):
     _UUID = re.compile(r"Tile (\d+)")
 
     @classmethod
     def blank(cls, dim=10):
-        return cls(0, dim, {
-            (x, y): '.'
-            for y in range(dim)
-            for x in range(dim)
+        return cls(0, dim, {cls.coord(idx, dim): '.' for idx in range(dim * dim)})
+
+    @classmethod
+    def assembled(cls, lines, uuid=0):
+        return cls(uuid, len(lines), {
+            (x, y): char
+            for y, line in enumerate(lines)
+            for x, char in enumerate(line)
         })
 
     @classmethod
     def parse(cls, tile_data):
         lines = [_.strip() for _ in tile_data.splitlines()]
         uuid, = cls._UUID.findall(lines[0])
-        return cls(int(uuid), len(lines[1:]), {
-            (x, y): char
-            for y, line in enumerate(lines[1:])
-            for x, char in enumerate(line)
-        })
-
-    @classmethod
-    def assembled(cls, lines):
-        return cls(0, len(lines), {
-            (x, y): char
-            for y, line in enumerate(lines)
-            for x, char in enumerate(line)
-        })
+        return cls.assembled(lines[1:], int(uuid))
 
     def __repr__(self):
         return f"{self.uuid}"
@@ -70,20 +90,12 @@ class Tile:
         self._data = data
         self._dim = dim
 
-    def lines(self, borders=True):
-        title = f"Tile {self.uuid:04}: "
-        b = " " if borders else ""
+    def lines(self, color=False, borders=False, **_kwds):
         s, e = (0, self._dim) if borders else (1, self._dim - 1)
-        content = [
-            "".join(self._data[(x, y)] for x in range(s, e)) + b
+        return [
+            "".join(colorize(self._data[(x, y)], color) for x in range(s, e))
             for y in range(s, e)
         ]
-        if borders:
-            return [title] + content + [" " * (self._dim + 1)]
-        return content
-
-    def print(self, borders=True):
-        return "\n".join(self.lines(borders))
 
     def side(self, label, flip):
         def value(s):
@@ -120,22 +132,18 @@ class Tile:
         count = 0
         for x in range(self._dim - w):
             for y in range(self._dim - h):
-                locs = [(x + xm, y + ym) for xm, ym in monster.data ]
+                locs = [(x + xm, y + ym) for xm, ym in monster.data]
                 if all(self._data[_] == "#" for _ in locs):
                     count += 1
                     for _ in locs:
-                        self._data[_] = "O"
+                        self._data[_] = "█"
         return count
 
     def count(self, char="#"):
         return sum(1 for _ in self._data.values() if _ == char)
 
 
-class Grid:
-    @staticmethod
-    def coord(idx, dim):
-        return idx % dim, idx // dim
-
+class Grid(Coordinates):
     @classmethod
     def craft(cls, tiles):
         dim = int(sqrt(len(tiles)))
@@ -155,30 +163,20 @@ class Grid:
         self.dim = dim
         self.data = data
 
-    def lines(self, border=True):
+    def lines(self, **kwds):
         return [
-            "".join(_) + "\n"
+            "".join(_)
             for y in range(self.dim)
             for _ in zip(*(
-                self.data[(x, y)].lines(border) for x in range(self.dim)
+                self.data[(x, y)].lines(**kwds) for x in range(self.dim)
             ))
         ]
 
-    def exists(self, tile):
-        return any(t.uuid == tile.uuid for t in self.data.values())
-
-    def print(self, filename=None, border=True):
-        if filename:
-            with open(filename, 'w') as fw:
-                fw.write('\033c')
-                fw.writelines(self.lines(border))
-        return Tile.assembled(
-            [_.strip() for _ in self.lines(border=False)]
-        )
+    def to_tile(self):
+        return Tile.assembled(self.lines(color=False))
 
     def replace(self, idx, tile):
-        pos = self.coord(idx, self.dim)
-        self.data[pos] = tile
+        self.data[self.coord(idx, self.dim)] = tile
 
     @cached_property
     def scores(self):
@@ -189,21 +187,17 @@ class Grid:
         return scores
 
     @cached_property
-    def edges(self):
+    def corners(self):
         edges = defaultdict(list)
         for score, pieces in self.scores.items():
             if len(pieces) == 1:
                 edges[pieces[0].tile].append(pieces[0])
-        return edges
+        return dict((t, l) for t, l in edges.items() if len(l) == 4)
 
-    @cached_property
-    def corners(self):
-        return dict((t, l) for t, l in self.edges.items() if len(l) == 4)
-
-    def neighbor(self, tile, dir):
-        score = next(
-            t for t in tile.scores() if not t.flipped and t.side == dir
-        )
+    def neighbor(self, tile, side):
+        score = next(filter(
+            lambda t: not t.flipped and t.side == side, tile.scores()
+        ))
         pair = self.scores[score.score]
         return next(p for p in pair if p.tile.uuid != tile.uuid)
 
@@ -217,6 +211,7 @@ class Grid:
         slot, inc = 0, 1
         for idx in range(self.dim * self.dim):
             to_fill.replace(slot, insert)
+            to_fill.print(logfile=LOG_FILE, color=True)
             if idx % self.dim == 0:
                 c, n = tuple(next(snake))
             elif idx == (self.dim * self.dim) - 1:
@@ -237,13 +232,15 @@ class Grid:
 
 
 piece_grid = Grid.craft([Tile.parse(_) for _ in tiles_data])
-LOG_FILE = f"day20{extension}.log"
 print(f"Result 1: {prod(s.uuid for s in piece_grid.corners.keys())}")
 
 monster = Monster.craft()
-sat_image = piece_grid.fill()
-sat_tile = sat_image.print(LOG_FILE, border=False)
+sat_grid = piece_grid.fill()
+sat_grid.print(logfile=LOG_FILE, color=True)
+sat_tile = sat_grid.to_tile()
 while sat_tile.mask(monster) == 0:
     sat_tile = sat_tile.rr()
-print(f"Result 2: {sat_tile.count()}")
+    sat_tile.print(logfile=LOG_FILE, color=True, borders=True)
+sat_tile.print(logfile=LOG_FILE, color=True, borders=True)
 
+print(f"Result 2: {sat_tile.count()}")

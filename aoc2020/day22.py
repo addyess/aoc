@@ -5,23 +5,6 @@ VERBOSE = False
 with open("day22.txt") as f_in:
     ins = f_in.read()
 
-# ins = """
-# Player 1:
-# 9
-# 2
-# 6
-# 3
-# 1
-#
-# Player 2:
-# 5
-# 8
-# 4
-# 7
-# 10
-# """
-#
-#
 class Deck:
     @classmethod
     def parse(cls, sections):

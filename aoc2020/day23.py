@@ -1,78 +1,64 @@
-from itertools import count
-
-VERBOSE = True
-ins = "496138527"
-# ins = "389125467"
-cup_labels = list(ins)
-
-
-def verbose(*args, **kwargs):
-    if VERBOSE:
-        print(*args, **kwargs)
+from itertools import chain
 
 
 class Cups:
-    def __init__(self, start):
-        self.buckets = [int(_) for _ in start]
-        self.max = max(self.buckets)
-        self.cur = 0
-        self.cur_move = 0
-
-    def __str__(self):
-        repr = (
-            self.buckets[0:self.cur] +
-            [f'({self.buckets[self.cur]})'] +
-            self.buckets[self.cur+1:]
-        )
-        return ' '.join(map(str, repr))
-
-    def next_cur(self, cur):
-        cur += 1
-        return cur % len(self.buckets)
+    def __init__(self, init, max_num=None):
+        self.max = max_num or len(cup_labels)
+        self.graph = {}
+        self.cur = p = init[0]
+        for label in chain(init[1:], range(10, self.max+1)):
+            self.graph[p] = label
+            p = label
+        self.graph[p] = self.cur
 
     @property
-    def final(self):
-        cur = self.buckets.index(1)
-        return "".join(
-            str(self.buckets[self.next_cur(cur + _)])
-            for _ in range(len(self.buckets)-1)
-        )
+    def part1(self):
+        n = self.graph[1]
+        p1 = ""
+        while len(p1) < self.max-1:
+            p1 += str(n)
+            n = self.graph[n]
+        return p1
+
+    @property
+    def part2(self):
+        n1 = self.graph[1]
+        n2 = self.graph[n1]
+        return n1 * n2
 
     def move(self):
-        # Select to Remove
-        self.cur_move += 1
-        verbose(f"-- move {self.cur_move}-- ")
-        verbose(f"cups: {self}")
-
         # Remove Cups
-        next3 = [self.next_cur(self.cur + _) for _ in range(3)]
-        next3_label = [self.buckets[_] for _ in next3]
-        for r in next3:
-            self.buckets[r] = None
-        verbose(f"pickup: {', '.join(map(str, next3_label))}")
+        remove = []
+        n = self.graph[self.cur]
+        for _ in range(3):
+            remove.append(n)
+            n = self.graph[n]
+        self.graph[self.cur] = n
 
         # Select Destination Label
-        dest = self.buckets[self.cur] - 1
-        while dest in next3_label or dest == 0:
+        dest = self.cur - 1
+        while dest == 0 or dest in remove:
             if dest == 0:
                 dest = self.max
             else:
                 dest -= 1
-        verbose(f"destination: {dest}")
-        verbose()
 
         # Insertion
-        label_cur = self.buckets[self.cur]
-        pos = self.buckets.index(dest) + 1
-        for p in reversed(next3_label):
-            self.buckets.insert(pos, p)
+        pos, self.graph[dest] = self.graph[dest], remove[0]
+        self.graph[remove[-1]] = pos
 
-        # Flatten
-        self.buckets = [_ for _ in self.buckets if _ is not None]
-        self.cur = self.next_cur(self.buckets.index(label_cur))
+        # Setup Next
+        self.cur = self.graph[self.cur]
 
 
+ins = "496138527"
+cup_labels = list(map(int, ins))
 cups = Cups(cup_labels)
 for _ in range(100):
     cups.move()
-print(f"Result 1: {cups.final}")
+print(f"Result 1: {cups.part1}")
+
+cups = Cups(cup_labels, 1000000)
+for _ in range(10000000):
+    cups.move()
+print(f"Result 2: {cups.part2}")

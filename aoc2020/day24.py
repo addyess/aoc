@@ -27,11 +27,9 @@ class Tiles:
                     pos = self.neighbor(pos, s)
                 self.ground[pos] ^= True
             black_tiles = [k for k, v in self.ground.items() if v]
-            maxx, maxy = map(max, zip(*black_tiles))
-            minx, miny = map(min, zip(*black_tiles))
-            for y in range(miny - 1, maxy + 2):
-                for x in range(minx - 1, maxx + 2):
-                    _ = self.ground[(x, y)]
+            for pos in black_tiles:
+                for d in ["e", "se", "sw", "w", "ne", "nw"]:
+                    _ = self.ground[self.neighbor(pos, d)]
 
     @property
     def sum(self):

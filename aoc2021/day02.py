@@ -9,21 +9,21 @@ def parse(line):
 
 def navigate(loc, cur):
     inst, value = cur
-    if inst == 'forward':
+    if inst == "forward":
         loc[0] += value
     else:
-        loc[1] += value if inst == 'down' else (0 - value)
+        loc[1] += value if inst == "down" else (0 - value)
     return loc
 
 
 def navigate_by_aim(acc, cur):
     inst, value = cur
     loc, aim = acc
-    if inst == 'forward':
+    if inst == "forward":
         loc[0] += value
         loc[1] += aim * value
     else:
-        aim += value if inst == 'down' else (0 - value)
+        aim += value if inst == "down" else (0 - value)
     return loc, aim
 
 

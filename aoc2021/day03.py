@@ -21,8 +21,7 @@ class SubStats:
         return len(self.raw[0].strip())
 
     def bit_sum(self, sums, line):
-        cur_set = []
-        cur = as_bin(line)
+        cur_set, cur = [], as_bin(line)
         for b in range(self.bit_length):
             cur_set.append(1 if (cur >> b) & 1 else -1)
         return list(map(lambda t: t[0] + t[1], zip_longest(sums, cur_set, fillvalue=0)))

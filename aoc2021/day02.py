@@ -11,8 +11,10 @@ def navigate(loc, cur):
     inst, value = cur
     if inst == "forward":
         loc[0] += value
+    elif inst == "down":
+        loc[1] += value
     else:
-        loc[1] += value if inst == "down" else (0 - value)
+        loc[1] -= value
     return loc
 
 
@@ -22,8 +24,10 @@ def navigate_by_aim(acc, cur):
     if inst == "forward":
         loc[0] += value
         loc[1] += aim * value
+    elif inst == "down":
+        aim += value
     else:
-        aim += value if inst == "down" else (0 - value)
+        aim -= value
     return loc, aim
 
 

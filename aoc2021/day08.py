@@ -1,3 +1,4 @@
+from types import SimpleNamespace
 SEGMENTS = {
     1: set("cf"),
     7: set("acf"),
@@ -14,14 +15,15 @@ SEGMENTS = {
 
 def parse(lines):
     for line in lines:
-        yield [
-            list(map(set, section.split(" ")))
-            for section in map(str.strip, line.split("|"))
-        ]
+        uniq, output = map(str.strip, line.split("|"))
+        yield SimpleNamespace(
+            uniq=uniq.split(" "), output=output.split(" ")
+        )
 
 
-def isolate(uniq):
+def isolate(uniq_s):
     known = {}
+    uniq = list(map(set, uniq_s))
     # these are uniquely identified by number of segments lit
     for num in (1, 4, 7, 8):
         for digit in uniq:
@@ -66,13 +68,13 @@ def isolate(uniq):
 
 
 def outputs(line):
-    uniq, output = line
-    digits = [k for o in output for k, v in isolate(uniq).items() if set(v) == o]
+    output = list(map(set, line.output))
+    digits = [k for o in output for k, v in isolate(line.uniq).items() if set(v) == o]
     return sum(place * 10 ** i for i, place in enumerate(reversed(digits)))
 
 
 def matches(lines, num):
-    return sum(len(out) == len(SEGMENTS[num]) for line in lines for out in line[1])
+    return sum(len(out) == len(SEGMENTS[num]) for line in lines for out in line.output)
 
 
 with open("day08.txt") as fin:

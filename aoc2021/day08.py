@@ -1,4 +1,5 @@
 from types import SimpleNamespace
+
 SEGMENTS = {
     1: set("cf"),
     7: set("acf"),
@@ -16,9 +17,7 @@ SEGMENTS = {
 def parse(lines):
     for line in lines:
         uniq, output = map(str.strip, line.split("|"))
-        yield SimpleNamespace(
-            uniq=uniq.split(" "), output=output.split(" ")
-        )
+        yield SimpleNamespace(uniq=uniq.split(" "), output=output.split(" "))
 
 
 def isolate(uniq_s):

@@ -17,7 +17,7 @@ class Cave:
         self.risks[new_loc] = new_risk
 
     def expand(self, size=5):
-        existing = dict(self.risks.items())
+        existing = self.risks.copy()
         self.dim, dim = self.dim * size, self.dim
         for my in range(size - 1):
             for mx in range(size - 1):

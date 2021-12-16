@@ -16,5 +16,3 @@ def trampoline(jumps, rule):
 
 print(f"Result 1: {trampoline([int(_) for _ in ins], lambda _: 1)}")
 print(f"Result 2: {trampoline([int(_) for _ in ins], lambda o: -1 if o > 2 else 1)}")
-
-

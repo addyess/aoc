@@ -1,4 +1,5 @@
 import re
+
 with open("day7.txt") as fin:
     ins = fin.readlines()
 name_re = re.compile(r"(\S+)\s+\((\d+)\)")
@@ -9,11 +10,11 @@ class Discs:
         kids = {}
         programs = {}
         for resp in _ins:
-            line = resp.strip().split(' -> ')
+            line = resp.strip().split(" -> ")
             name, weight = name_re.match(line[0]).groups()
             children = []
             if len(line) > 1:
-                children = line[1].split(', ')
+                children = line[1].split(", ")
                 for kid in children:
                     kids[kid] = name
             programs[name] = int(weight), 0, children

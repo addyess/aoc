@@ -27,9 +27,7 @@ class Chain:
     def surrounding(self, x, y):
         if (x, y) == (0, 0):
             return 1
-        loc = [(-1, -1), (-1, 0), (-1, 1),
-               (0, 1), (0, -1),
-               (1, -1), (1, 0), (1, 1)]
+        loc = [(-1, -1), (-1, 0), (-1, 1), (0, 1), (0, -1), (1, -1), (1, 0), (1, 1)]
         vals = [self.index_map.get((x + dx, y + dy)) for dx, dy in loc]
         return sum([val[1] for val in vals if val])
 

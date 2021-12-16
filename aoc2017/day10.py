@@ -30,7 +30,7 @@ def knot_hash(nums, _seq, i=0, skip=0):
     init = len(nums)
     for length in _seq:
         _nums = nums + nums
-        revd = list((_nums[i:i + length]))[::-1]
+        revd = list((_nums[i : i + length]))[::-1]
         for o, v in enumerate(revd):
             nums[(i + o) % init] = v
         i = (i + length + skip) % init

@@ -1,16 +1,17 @@
 from itertools import permutations
+
 with open("day4.txt") as fin:
     ins = fin.read()
 
 
 def no_repeat(phrase):
-    words = phrase.split(' ')
+    words = phrase.split(" ")
     unique = list(set(words))
     return len(unique) == len(words)
 
 
 def no_anagrams(phrase):
-    words = phrase.split(' ')
+    words = phrase.split(" ")
     unique = set(words)
     for word in unique:
         for p in permutations(word):

@@ -13,5 +13,5 @@ def matches(digits, hops):
 res1 = sum(matches(ins, 0))
 print(f"Result 1: {res1}")
 
-res2 = sum(matches(ins, len(ins)//2-1))
+res2 = sum(matches(ins, len(ins) // 2 - 1))
 print(f"Result 2: {res2}")

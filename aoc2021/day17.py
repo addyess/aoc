@@ -7,7 +7,10 @@ target = "target area: x=20..30, y=-10..-5"
 class Range:
     @classmethod
     def parse(cls, s_target):
-        m = re.match(r"target area: x=(?P<x1>-?\d+)..(?P<x2>-?\d+), y=(?P<y1>-?\d+)..(?P<y2>-?\d+)", s_target)
+        m = re.match(
+            r"target area: x=(?P<x1>-?\d+)..(?P<x2>-?\d+), y=(?P<y1>-?\d+)..(?P<y2>-?\d+)",
+            s_target,
+        )
         return cls({k: int(v) for k, v in m.groupdict().items()})
 
     def __init__(self, vectors):
@@ -15,9 +18,12 @@ class Range:
 
     def evaluate(self, pos):
         x, y = pos
-        if self.spec['x1'] <= x <= self.spec['x2'] and self.spec['y1'] <= y <= self.spec['y2']:
+        if (
+            self.spec["x1"] <= x <= self.spec["x2"]
+            and self.spec["y1"] <= y <= self.spec["y2"]
+        ):
             return 0  # hit
-        elif y < self.spec['y1'] or x > self.spec['x2']:
+        elif y < self.spec["y1"] or x > self.spec["x2"]:
             return 1  # deep
         return -1
 
@@ -39,7 +45,7 @@ class Range:
             return steps
 
     def potential_x_target(self):
-        for x in range(self.spec['x1'], self.spec['x2'] + 1):
+        for x in range(self.spec["x1"], self.spec["x2"] + 1):
             yield x
 
     def potential_x_vel(self):
@@ -51,8 +57,8 @@ class Range:
                         yield pos_xv * dir_x
 
     def highest_launch_metrics(self):
-        highest = -float('inf')
-        x_spec = self.spec['x1'] // 2
+        highest = -float("inf")
+        x_spec = self.spec["x1"] // 2
         pot_vx = set(self.potential_x_vel())
         for vx in pot_vx:
             for vy in range(x_spec):
@@ -63,7 +69,7 @@ class Range:
 
     def successful_launch_metrics(self):
         success = []
-        x_spec = self.spec['x1'] // 2
+        x_spec = self.spec["x1"] // 2
         pot_vx = set(self.potential_x_vel())
         for vx in pot_vx:
             for vy in range(-x_spec, x_spec):

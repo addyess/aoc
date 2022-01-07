@@ -2,3 +2,4 @@ blist
 astar
 Pillow
 dijkstra
+sympy

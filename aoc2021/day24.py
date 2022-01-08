@@ -11,7 +11,7 @@ VARIABLES = symbols(list("ABCDEFGHIJKLMN"), nonzero=True, integer=True)
 class Ins:
     @classmethod
     def parse(cls, line):
-        cmd, *args = line.strip().split(' ')
+        cmd, *args = line.strip().split(" ")
         return cls(cmd, *args)
 
     def __init__(self, operation, *args):
@@ -23,7 +23,7 @@ class Ins:
 
     def _dref(self, machine):
         b = self.args[1]
-        if b in 'wxyz':
+        if b in "wxyz":
             return machine.registers[b]
         return int(b)
 
@@ -107,10 +107,7 @@ class Machine:
     def __init__(self, ins):
         self.ins = ins
         self.registers = dict(w=0, x=0, y=0, z=0)
-        self.options = OrderedDict(
-            (v, set(range(1, 10)))
-            for v in VARIABLES
-        )
+        self.options = OrderedDict((v, set(range(1, 10))) for v in VARIABLES)
 
     def train(self, serial=VARIABLES):
         it = iter(serial)
@@ -119,14 +116,14 @@ class Machine:
         return self
 
     def eval_z(self):
-        expr = Eq(self.registers['z'], 0)
+        expr = Eq(self.registers["z"], 0)
         Ins.reduce(expr, self)
         max_serial = "".join([str(max(_)) for _ in self.options.values()])
         min_serial = "".join([str(min(_)) for _ in self.options.values()])
         return max_serial, min_serial
 
 
-with open('day24.txt') as fin:
+with open("day24.txt") as fin:
     monad = Machine.parse(fin)
 res1, res2 = monad.train(VARIABLES).eval_z()
 print(f"Result #1 {res1}")

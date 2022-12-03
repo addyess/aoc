@@ -3,18 +3,17 @@ from aoc.file import example, puzzle_input
 
 
 def find_compartment_match(line):
-    c1, c2 = map(set, (line[:len(line)//2], line[len(line)//2:]))
+    c1, c2 = map(set, (line[: len(line) // 2], line[len(line) // 2 :]))
     return (c1 & c2).pop()
 
 
 def find_group_id(group):
     e1, e2, e3 = map(set, group)
-    id = e1 & e2 & e3
-    return id.pop()
+    return (e1 & e2 & e3).pop()
 
 
 def priority(match):
-    base, adder = ('a', 1) if 'a' <= match <= 'z' else ('A', 27)
+    base, adder = ("a", 1) if "a" <= match <= "z" else ("A", 27)
     return ord(match) - ord(base) + adder
 
 
@@ -26,18 +25,22 @@ def solver(lines):
         if line_no % 3 == 0:
             groups.append([])
         groups[-1].append(line)
-        
+
     for group in groups:
         badge_total += priority(find_group_id(group))
     return rucksack_total, badge_total
 
 
-rucksack_total, badge_total = solver(example("""vJrwpWtwJgWrhcsFMMfFFhFp
+rucksack_total, badge_total = solver(
+    example(
+        """vJrwpWtwJgWrhcsFMMfFFhFp
 jqHRNqRjqzjGDLGLrsFMfFZSrLrFZsSL
 PmmdzqPrVvPwwTWBwg
 wMqvLMZHhHMvwLHjbvcjnnSBnvTQFn
 ttgJtRGJQctTZtZT
-CrZsJsPPZsGzwwsLwLmpwMDw"""))
+CrZsJsPPZsGzwwsLwLmpwMDw"""
+    )
+)
 assert rucksack_total == 157
 assert badge_total == 70
 

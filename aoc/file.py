@@ -24,7 +24,7 @@ def _retrieve_input(f_path: str) -> Path:
     return path_obj
 
 
-def puzzle_input():
+def puzzle_input(f_path=None):
     """Read the contents of the input file.
 
     the input file is located at the caller's path
@@ -35,8 +35,11 @@ def puzzle_input():
        if the file doesn't already exist
     """
 
-    f_path = inspect.stack()[1].filename.replace(".py", ".txt")
-    path_obj = _retrieve_input(f_path)
+    if f_path is None:
+        f_path = inspect.stack()[1].filename.replace(".py", ".txt")
+        path_obj = _retrieve_input(f_path)
+    else:
+        path_obj = Path(inspect.stack()[1].filename).parent / f_path
 
     for line in path_obj.read_text().splitlines():
         yield line.strip("\n")
